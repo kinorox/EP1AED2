@@ -11,16 +11,19 @@ namespace EP1
     {
         static void Main(string[] args)
         {
-            var watch = System.Diagnostics.Stopwatch.StartNew();
+            var watchTotal = System.Diagnostics.Stopwatch.StartNew();
             // the code that you want to measure comes here
 
-            Console.WriteLine("Lendo base de dados de frequentadores...");
+            var watchLeituraDB = System.Diagnostics.Stopwatch.StartNew();
 
             var frequentadores = ObterFrequentadores();
+            watchLeituraDB.Stop();
+
+            Console.WriteLine($"Tempo de leitura do BD: {watchLeituraDB.ElapsedMilliseconds}ms");
+
+            var watchAgrupamentoProcessamento  = System.Diagnostics.Stopwatch.StartNew();
 
             var locais = new List<Local>();
-
-            Console.WriteLine($"{frequentadores.Count} Frequentadores obtidos... iniciando agrupamento");
 
             //Agrupando e adicionando a lista os frequentadores dos destinos com coordenadas X e Y
             locais.AddRange((from t in frequentadores
@@ -66,7 +69,11 @@ namespace EP1
                                             NrLocais = grp.Select(x => x.xy).Count()
                                         }).ToList();
 
-            Console.WriteLine("Escrevendo arquivos resultados em csv...");
+            watchAgrupamentoProcessamento.Stop();
+
+            Console.WriteLine($"Tempo de agrupamento e processamento: {watchAgrupamentoProcessamento.ElapsedMilliseconds}ms");
+
+            var watchEscreverCSV = System.Diagnostics.Stopwatch.StartNew();
 
             using (var writer = new StreamWriter("result\\locaisFrequentadores.csv"))
             using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
@@ -74,11 +81,13 @@ namespace EP1
                 csv.WriteRecords(locaisFrequentadores);
             }
 
-            Console.WriteLine("Finalizado.");
+            watchAgrupamentoProcessamento.Stop();
 
-            watch.Stop();
-
-            Console.WriteLine($"Time elapsed: {watch.ElapsedMilliseconds}ms");;
+            Console.WriteLine($"Tempo de escrita no CSV: {watchEscreverCSV.ElapsedMilliseconds}ms");
+            
+            watchTotal.Stop();
+            
+            Console.WriteLine($"Tempo total: {watchTotal.ElapsedMilliseconds}ms");
         }
 
         /// <summary>
