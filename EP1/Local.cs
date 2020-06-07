@@ -10,5 +10,7 @@ namespace EP1
         public int coordenada_x { get; set; }
         public int coordenada_y { get; set; }
         public int NumeroFrequentadores { get; set; }
+
+        public List<Frequentador> Frequentadores { get; set; }
     }
 }

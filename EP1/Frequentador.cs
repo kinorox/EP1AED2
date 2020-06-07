@@ -12,5 +12,7 @@ namespace EP1
         public int DestinoY { get; set; }
         public int OrigemX { get; set; }
         public int OrigemY { get; set; }
+        public GenericList<Frequentador> Adjacentes { get; set; }
+        public int Grau { get; set; }
     }
 }
