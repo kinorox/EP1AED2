@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.WindowsRuntime;
 using CsvHelper;
 
 namespace EP1
@@ -17,8 +19,126 @@ namespace EP1
 
             //ProcessamentoEP3();
 
-            ProcessamentoEP4();
+            //ProcessamentoEP4();
+
+            ProcessamentoEP5();
         }
+
+        private static List<SnapshotInfectados> snapshots;
+
+        private static int simulationCounter = 0;
+
+        private static int maximumSimulationCounter = 10000;
+
+        public static void ProcessamentoEP5()
+        {
+            Frequentador[] arranjoFrequentadores = ReadFileAndConstructGraph("traducao1.txt");
+            
+            var numeroFrequentadores = arranjoFrequentadores.Length;
+
+            Frequentador infected = null;
+
+            while (infected == null)
+            {
+                var randomFirstInfected = new Random().Next(0, numeroFrequentadores);
+                infected = arranjoFrequentadores[randomFirstInfected];
+            }
+
+
+            snapshots = new List<SnapshotInfectados>();
+
+            var infectedIndex = infected.Index;
+            var c = 0.9;
+            var r = 0.1;
+            var testNumber = 1;
+
+            var iteration = 0;
+
+            Console.WriteLine($"Rodando simulacao C: {c} R: {r}");
+            
+            Simulate(c, r, infectedIndex, arranjoFrequentadores, iteration);
+        }
+
+        public static void Simulate(double c, double r, int index, Frequentador[] arranjoFrequentadores, int iterateCounter)
+        {
+            if (simulationCounter == maximumSimulationCounter)
+            {
+                GenerateSimulationResults();
+
+                Environment.Exit(0);
+            }
+                
+            simulationCounter++;
+
+            GeraSnapshot(arranjoFrequentadores, simulationCounter);
+
+            Console.WriteLine($"{simulationCounter}");
+
+            var frequentador = arranjoFrequentadores[index];
+
+            if(frequentador == null)
+                return;
+            
+            if (iterateCounter == 0) //iteracao inicial, ou seja, primeira pessoa infectada
+            {
+                frequentador.Status = "I";
+            }
+
+            iterateCounter++;
+
+            if (frequentador.Status == "I")
+            {
+                foreach (Frequentador adj in frequentador.Adjacentes)
+                {
+                    if (adj == null)
+                        continue;
+
+                    Simulate(c, r, adj.Index, arranjoFrequentadores, iterateCounter);
+                }
+
+                var x = new Random().NextDouble();
+
+                if (x <= r && iterateCounter != 1)
+                {
+                    frequentador.Status = "R";
+                }
+            }
+            else if (frequentador.Status == "S")
+            {
+                var x = new Random().NextDouble();
+
+                if (x <= c)
+                {
+                    frequentador.Status = "I";
+
+                    Simulate(c, r, frequentador.Index, arranjoFrequentadores, iterateCounter);
+                }
+            }
+        }
+
+        private static void GenerateSimulationResults()
+        {
+            Console.WriteLine("Escrevendo resultado em csv");
+
+            using (var writer = new StreamWriter($"result\\simulacaoInfectados.csv"))
+            using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
+            {
+                csv.WriteRecords(snapshots);
+            }
+        }
+
+        public static void GeraSnapshot(Frequentador[] arranjoFrequentadores, int counter)
+        {
+            var result = new SnapshotInfectados()
+            {
+                Iteracao = counter,
+                SCounts = arranjoFrequentadores.Count(x => x?.Status == "S"),
+                ICounts = arranjoFrequentadores.Count(x => x?.Status == "I"),
+                RCounts = arranjoFrequentadores.Count(x => x?.Status == "R")
+            };
+
+            snapshots.Add(result);
+        } 
 
         public static void ProcessamentoEP4()
         {
@@ -99,7 +219,7 @@ namespace EP1
                     continue;
                 }
 
-                int v = int.Parse(items[1]);
+                int v = int.Parse(items[0]);
 
                 if (arranjoFrequentadores != null)
                 {
@@ -117,7 +237,7 @@ namespace EP1
 
                     f.Adjacentes.AddNode(new Frequentador()
                     {
-                        Index = int.Parse(items[0])
+                        Index = int.Parse(items[1])
                     });
 
                     arranjoFrequentadores[v] = f;

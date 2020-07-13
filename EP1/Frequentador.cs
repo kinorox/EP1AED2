@@ -15,5 +15,7 @@ namespace EP1
         public int OrigemY { get; set; }
         public GenericList<Frequentador> Adjacentes { get; set; }
         public int Grau { get; set; }
+
+        public string Status { get; set; } = "S";
     }
 }
