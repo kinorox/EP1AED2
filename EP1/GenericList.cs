@@ -1,7 +1,9 @@
-﻿namespace EP1
+﻿using System.Collections;
+
+namespace EP1
 {
     // T is the type of data stored in a particular instance of GenericList. 
-    public class GenericList<T>
+    public class GenericList<T> : IEnumerable
     {
         private class Node
         {
@@ -41,6 +43,16 @@
                 current = current.Next;
             }
             return temp;
+        }
+
+        public IEnumerator GetEnumerator()
+        {
+            Node current = head;
+            while (current != null)
+            {
+                yield return current.Data;
+                current = current.Next;
+            }
         }
     }
 }

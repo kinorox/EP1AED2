@@ -7,6 +7,7 @@ namespace EP1
 {
     public class Frequentador
     {
+        public int Index { get; set; }
         public string Id { get; set; }
         public int DestinoX { get; set; }
         public int DestinoY { get; set; }

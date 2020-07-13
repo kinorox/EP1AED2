@@ -11,63 +11,63 @@ namespace EP1
     {
         static void Main(string[] args)
         {
-            ProcessamentoEP1();
+            //ProcessamentoEP1();
 
             //ProcessamentoEP2();
+
+            ProcessamentoEP3();
+        }
+
+        public static void ProcessamentoEP3()
+        {
+            Console.WriteLine("Iniciio processamento EP3");
+
+            var grafo = GeraGrafoFrequentadores();
+
+            var result = new List<FrequentadorComponente>();
+
+            Console.WriteLine("Computando tamanho das componentes");
+
+            foreach (var f in grafo)
+            {
+                var dfs = new DepthFirstSearch(grafo, f.Index);
+                
+                var frequentadorComponente = new FrequentadorComponente()
+                {
+                    f = f,
+                    TamanhoComponenteConexa = dfs.Count()
+                };
+
+                result.Add(frequentadorComponente);
+            }
+
+            Console.WriteLine("Agrupando para verificar tamanho das componentes e incidencias");
+
+            var grouped = (from t in result
+                group t by new { t.TamanhoComponenteConexa }
+                into grp
+                select new HistogramaGrau()
+                {
+                    Grau = grp.Key.TamanhoComponenteConexa,
+                    NumeroFrequentadores = grp.Select(x => x.TamanhoComponenteConexa).Count()
+                }).ToList();
+
+            Console.WriteLine("Escrevendo resultado em csv");
+
+            using (var writer = new StreamWriter("result\\tamanhoComponentes.csv"))
+            using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
+            {
+                csv.WriteRecords(grouped);
+            }
+
+            Console.WriteLine("End");
         }
 
         public static void ProcessamentoEP2()
         {
-            Console.WriteLine("Iniciando processamento EP2");
+            Console.WriteLine("Iniciando processamento EP2...");
 
-            var frequentadores = ObterFrequentadores();
-
-            var locais = new List<Local>();
-
-            Console.WriteLine("Agrupando por local...");
-
-            //agrupando por local xy e adicionando todos os frequentadores deste local
-            locais.AddRange((from t in frequentadores
-                group t by new { t.DestinoX, t.DestinoY }
-                into grp
-                select new Local()
-                {
-                    xy = $"{grp.Key.DestinoX}{grp.Key.DestinoY}",
-                    coordenada_x = grp.Key.DestinoX,
-                    coordenada_y = grp.Key.DestinoY,
-                    NumeroFrequentadores = grp.Select(x => x.Id).Count(),
-                    Frequentadores = grp.ToList()
-                }).ToList());
-
-            //criando estrutura de grafo em listas de adjacencias de frequentadores
-            int index = 0;
-            var arranjoFrequentadores = new Frequentador[frequentadores.Count];
-
-            foreach (var l in locais)
-            {
-                foreach (var frequentador in l.Frequentadores)
-                {
-                    arranjoFrequentadores[index] = frequentador;
-
-                    frequentador.Adjacentes = new GenericList<Frequentador>();
-
-                    var grau = 0;
-
-                    foreach (var freqAdjacente in l.Frequentadores)
-                    {
-                        if(freqAdjacente.Id == frequentador.Id)
-                            continue;
-
-                        frequentador.Adjacentes.AddNode(freqAdjacente);
-
-                        grau++;
-                    }
-
-                    frequentador.Grau = grau;
-
-                    index++;
-                }
-            }
+            var arranjoFrequentadores = GeraGrafoFrequentadores();
 
             var grouped = (from t in arranjoFrequentadores
                 group t by new { t.Grau }
@@ -216,5 +216,62 @@ namespace EP1
 
             return result;
         }
+
+        public static Frequentador[] GeraGrafoFrequentadores()
+        {
+            var frequentadores = ObterFrequentadores();
+
+            var locais = new List<Local>();
+
+            Console.WriteLine("Agrupando por local...");
+
+            //agrupando por local xy e adicionando todos os frequentadores deste local
+            locais.AddRange((from t in frequentadores
+                group t by new { t.DestinoX, t.DestinoY }
+                into grp
+                select new Local()
+                {
+                    xy = $"{grp.Key.DestinoX}{grp.Key.DestinoY}",
+                    coordenada_x = grp.Key.DestinoX,
+                    coordenada_y = grp.Key.DestinoY,
+                    NumeroFrequentadores = grp.Select(x => x.Id).Count(),
+                    Frequentadores = grp.ToList()
+                }).ToList());
+
+            //criando estrutura de grafo em listas de adjacencias de frequentadores
+            int index = 0;
+            var arranjoFrequentadores = new Frequentador[frequentadores.Count];
+
+            foreach (var l in locais)
+            {
+                foreach (var frequentador in l.Frequentadores)
+                {
+                    frequentador.Index = index;
+
+                    arranjoFrequentadores[index] = frequentador;
+
+                    frequentador.Adjacentes = new GenericList<Frequentador>();
+
+                    var grau = 0;
+
+                    foreach (var freqAdjacente in l.Frequentadores)
+                    {
+                        if (freqAdjacente.Id == frequentador.Id)
+                            continue;
+
+                        frequentador.Adjacentes.AddNode(freqAdjacente);
+
+                        grau++;
+                    }
+
+                    frequentador.Grau = grau;
+
+                    index++;
+                }
+            }
+
+            return arranjoFrequentadores;
+        }
     }
 }
+
