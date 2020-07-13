@@ -15,7 +15,116 @@ namespace EP1
 
             //ProcessamentoEP2();
 
-            ProcessamentoEP3();
+            //ProcessamentoEP3();
+
+            ProcessamentoEP4();
+        }
+
+        public static void ProcessamentoEP4()
+        {
+            var watchTotal = System.Diagnostics.Stopwatch.StartNew();
+
+            Frequentador[] arranjoFrequentadores = ReadFileAndConstructGraph("traducao1.txt");
+
+            var result = new List<PairAndDistance>();
+
+            Console.WriteLine("Processando dados...");
+
+            foreach (var i in arranjoFrequentadores) //percorrendo todo o arranjo de frequentadores
+            {
+                if(i == null)
+                    continue;
+
+                BreadthFirstPaths bfp = new BreadthFirstPaths(arranjoFrequentadores, i.Index); //computando busca em largura e marcando vertices dos caminhos possiveis
+
+                foreach (var j in arranjoFrequentadores) //
+                {
+                    if(j == null)
+                        continue;
+
+                    var dist = bfp.GetDistance(j.Index);
+
+                    if (dist == -1) //nao existe distancia, ou seja, sao vertices desconexos
+                        continue;
+
+                    var pairAndDistance = new PairAndDistance()
+                    {
+                        Pair1 = i.Index,
+                        Pair2 = j.Index,
+                        Distance = dist
+                    };
+
+                    result.Add(pairAndDistance);
+                }
+            }
+
+            watchTotal.Stop();
+
+            Console.WriteLine($"Tempo total para processar distancias: {watchTotal.ElapsedMilliseconds}ms");
+
+            Console.WriteLine("Agrupando");
+
+            var grouped = (from t in result
+                group t by new { t.Distance }
+                into grp
+                select new HistogramaGrau()
+                {
+                    Grau = grp.Key.Distance,
+                    NumeroFrequentadores = grp.Count()
+                }).ToList();
+
+            Console.WriteLine("Escrevendo resultado em csv");
+
+            using (var writer = new StreamWriter("result\\histogramaDistancias.csv"))
+            using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
+            {
+                csv.WriteRecords(grouped);
+            }
+
+            Console.WriteLine("End");
+        }
+
+        public static Frequentador[] ReadFileAndConstructGraph(string path)
+        {
+            Frequentador[] arranjoFrequentadores = null;
+
+            StreamReader reader = File.OpenText(path);
+            string line;
+            while ((line = reader.ReadLine()) != null)
+            {
+                string[] items = line.Split(' ');
+                if (items.Length == 1)
+                {
+                    arranjoFrequentadores = new Frequentador[int.Parse(items[0])];
+                    continue;
+                }
+
+                int v = int.Parse(items[1]);
+
+                if (arranjoFrequentadores != null)
+                {
+                    var f = arranjoFrequentadores[v];
+                    if (f == null)
+                    {
+                        f = new Frequentador()
+                        {
+                            Index = v
+                        };
+                    }
+
+                    if (f.Adjacentes == null)
+                        f.Adjacentes = new GenericList<Frequentador>();
+
+                    f.Adjacentes.AddNode(new Frequentador()
+                    {
+                        Index = int.Parse(items[0])
+                    });
+
+                    arranjoFrequentadores[v] = f;
+                }
+            }
+
+            return arranjoFrequentadores;
         }
 
         public static void ProcessamentoEP3()
